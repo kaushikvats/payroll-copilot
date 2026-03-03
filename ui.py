@@ -1,11 +1,10 @@
 import streamlit as st
-import requests
-import json
+from engine import process_query
 
 st.set_page_config(page_title="Payroll Compliance Copilot", layout="wide")
 
 st.title("🇮🇳 Indian Payroll Compliance Copilot")
-st.markdown("AI-powered payroll & labour law assistant for SMEs")
+st.markdown("AI-powered payroll & labour compliance assistant")
 
 st.divider()
 
@@ -31,27 +30,16 @@ st.divider()
 
 if st.button("🚀 Get Compliance Answer"):
 
-    payload = {
-        "question": question,
-        "state": state,
-        "emp_type": "Permanent",
-        "basic": basic,
-        "gross": gross,
-        "years_of_service": years,
-        "debug": False
-    }
-
     with st.spinner("Analyzing compliance rules..."):
-        #response = requests.post("http://127.0.0.1:9000/ask", json=payload)
-        response = requests.post("http://localhost:8000/ask", json=payload)
+        result = process_query(
+            question=question,
+            state=state,
+            emp_type="Permanent",
+            basic=basic,
+            gross=gross,
+            years_of_service=years
+        )
 
-    if response.status_code == 200:
-        answer = response.json()["answer"]
-
-        st.success("Compliance Analysis Complete")
-
-        st.markdown("## 📘 Result")
-        st.markdown(answer)
-
-    else:
-        st.error("Something went wrong.")
+    st.success("Compliance Analysis Complete")
+    st.markdown("## 📘 Result")
+    st.markdown(result)
