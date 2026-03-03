@@ -12,10 +12,11 @@ from calculations import (
     calculate_gratuity
 )
 
-# Globals (lazy-loaded)
+# Lazy globals
 _embeddings = None
 _db = None
 _llm = None
+
 
 SYSTEM_PROMPT = """
 You are an Indian Payroll Compliance Assistant.
@@ -39,10 +40,6 @@ Reference:
 
 
 def get_engine():
-    """
-    Lazy-load embeddings, vectorstore, and LLM.
-    Ensures vectorstore exists before loading.
-    """
     global _embeddings, _db, _llm
 
     if _embeddings is None:
@@ -115,22 +112,26 @@ def route_filter(question, state):
 
 
 def process_query(question, state, emp_type, basic, gross, years_of_service):
-    # Deterministic engine
     q_lower = question.lower()
     calculated_data = {}
 
+    # Deterministic calculations
     if "pf" in q_lower or "epf" in q_lower:
         calculated_data = calculate_pf(basic)
+
     elif "esi" in q_lower:
         calculated_data = calculate_esi(gross)
+
     elif "professional tax" in q_lower or "pt" in q_lower:
         calculated_data = calculate_pt(state, gross)
+
     elif "bonus" in q_lower:
         calculated_data = calculate_bonus(gross)
+
     elif "gratuity" in q_lower:
         calculated_data = calculate_gratuity(basic, years_of_service)
 
-    # Lazy-load engine AFTER ingestion
+    # Lazy load vectorstore + LLM
     db, llm = get_engine()
 
     retrieval_query = boost_query(question, state, basic, gross)
@@ -138,7 +139,9 @@ def process_query(question, state, emp_type, basic, gross, years_of_service):
 
     if filter_doc:
         docs = db.max_marginal_relevance_search(
-            retrieval_query, k=5, filter=filter_doc
+            retrieval_query,
+            k=5,
+            filter=filter_doc
         )
     else:
         docs = db.max_marginal_relevance_search(retrieval_query, k=5)
